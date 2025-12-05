@@ -9,9 +9,14 @@ pub struct SplatLoaderPlugin;
 impl Plugin for SplatLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SplatLoadState>()
-            .add_systems(Update, load_splat_on_demand)
+            .add_systems(Startup, load_from_cli_args)
+            .add_systems(Update, (
+                load_splat_on_demand,
+                handle_file_drop,
+            ))
             .add_systems(Update, check_splat_loaded.run_if(in_state(SplatLoadState::Loading)));
     }
+
 }
 
 /// Represents the state of splat loading
@@ -83,6 +88,37 @@ fn check_splat_loaded(
                 next_state.set(SplatLoadState::Failed);
             }
             _ => {}
+        }
+    }
+}
+
+/// Load splat from command line arguments
+fn load_from_cli_args(
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<SplatLoadState>>,
+) {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() > 1 {
+        let path = args[1].clone();
+        info!("Found CLI argument, loading splat: {}", path);
+        commands.insert_resource(SplatPath(path));
+        next_state.set(SplatLoadState::WaitingForPath);
+    }
+}
+
+/// Handle file drag and drop events
+fn handle_file_drop(
+    mut events: EventReader<FileDragAndDrop>,
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<SplatLoadState>>,
+) {
+    for event in events.read() {
+        if let FileDragAndDrop::DroppedFile { path_buf, .. } = event {
+            let path = path_buf.to_string_lossy().to_string();
+            info!("File dropped, loading splat: {}", path);
+            commands.insert_resource(SplatPath(path));
+            // Reset state to trigger loading
+            next_state.set(SplatLoadState::WaitingForPath);
         }
     }
 }
