@@ -1,0 +1,88 @@
+//! Gaussian splat file loading and management
+
+use bevy::prelude::*;
+use bevy_gaussian_splatting::{Gaussian3d, GaussianSceneHandle};
+
+/// Plugin for loading and managing Gaussian splat files
+pub struct SplatLoaderPlugin;
+
+impl Plugin for SplatLoaderPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_state::<SplatLoadState>()
+            .add_systems(Update, load_splat_on_demand)
+            .add_systems(Update, check_splat_loaded.run_if(in_state(SplatLoadState::Loading)));
+    }
+}
+
+/// Represents the state of splat loading
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum SplatLoadState {
+    #[default]
+    WaitingForPath,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+/// Component marking the currently loaded splat entity
+#[derive(Component)]
+pub struct LoadedSplat;
+
+/// Resource to hold the path of the splat file to load
+#[derive(Resource)]
+pub struct SplatPath(pub String);
+
+/// System to load a splat when a path is provided
+fn load_splat_on_demand(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    splat_path: Option<Res<SplatPath>>,
+    mut next_state: ResMut<NextState<SplatLoadState>>,
+    current_state: Res<State<SplatLoadState>>,
+    existing_splats: Query<Entity, With<LoadedSplat>>,
+) {
+    // Only process in WaitingForPath state when we have a path
+    if *current_state.get() != SplatLoadState::WaitingForPath {
+        return;
+    }
+
+    if let Some(path) = splat_path {
+        // Remove any existing splat
+        for entity in existing_splats.iter() {
+            commands.entity(entity).despawn();
+        }
+
+        // Load the new splat
+        let handle: Handle<Gaussian3d> = asset_server.load(&path.0);
+        
+        commands.spawn((
+            GaussianSceneHandle(handle),
+            Transform::default(),
+            LoadedSplat,
+        ));
+
+        next_state.set(SplatLoadState::Loading);
+        info!("Loading Gaussian splat from: {}", path.0);
+    }
+}
+
+/// Check if the splat has finished loading
+fn check_splat_loaded(
+    asset_server: Res<AssetServer>,
+    splat_query: Query<&GaussianSceneHandle, With<LoadedSplat>>,
+    mut next_state: ResMut<NextState<SplatLoadState>>,
+) {
+    for handle in splat_query.iter() {
+        match asset_server.get_load_state(handle.0.id()) {
+            Some(bevy::asset::LoadState::Loaded) => {
+                info!("Gaussian splat loaded successfully!");
+                next_state.set(SplatLoadState::Loaded);
+            }
+            Some(bevy::asset::LoadState::Failed(_)) => {
+                error!("Failed to load Gaussian splat!");
+                next_state.set(SplatLoadState::Failed);
+            }
+            _ => {}
+        }
+    }
+}

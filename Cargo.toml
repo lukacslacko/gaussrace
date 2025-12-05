@@ -1,0 +1,23 @@
+[package]
+name = "gaussrace"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "A racing game in Bevy loading a Gaussian splat"
+license = "MIT"
+
+[dependencies]
+bevy = { version = "0.17", default-features = true }
+bevy_gaussian_splatting = { version = "6.0", default-features = true }
+
+# Enable fast compiles for dev builds
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+# Optimizations for release builds
+[profile.release]
+lto = "thin"
+codegen-units = 1
