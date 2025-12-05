@@ -1,7 +1,7 @@
 //! Gaussian splat file loading and management
 
 use bevy::prelude::*;
-use bevy_gaussian_splatting::{Gaussian3d, GaussianSceneHandle};
+use bevy_gaussian_splatting::{GaussianScene, GaussianSceneHandle};
 
 /// Plugin for loading and managing Gaussian splat files
 pub struct SplatLoaderPlugin;
@@ -53,7 +53,7 @@ fn load_splat_on_demand(
         }
 
         // Load the new splat
-        let handle: Handle<Gaussian3d> = asset_server.load(&path.0);
+        let handle: Handle<GaussianScene> = asset_server.load(&path.0);
         
         commands.spawn((
             GaussianSceneHandle(handle),
