@@ -21,12 +21,12 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "GaussRace - Gaussian Splat Racing".into(),
-                resolution: (1280., 720.).into(),
+                resolution: (1280, 720).into(),
                 ..default()
             }),
             ..default()
         }))
-        .add_plugins(GaussianSplattingPlugin::default())
+        .add_plugins(GaussianSplattingPlugin)
         .add_plugins((
             SplatLoaderPlugin,
             GroundPlanePlugin,
@@ -49,6 +49,7 @@ fn setup_scene(mut commands: Commands) {
         AmbientLight {
             color: Color::WHITE,
             brightness: 500.0,
+            affects_lightmapped_meshes: true,
         },
     ));
 

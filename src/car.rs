@@ -222,7 +222,7 @@ fn update_car_physics(
     ground_plane: Res<GroundPlane>,
     time: Res<Time>,
 ) {
-    let Ok((mut car, mut transform)) = car_query.single_mut() else {
+    let Ok((car, mut transform)) = car_query.single_mut() else {
         return;
     };
 

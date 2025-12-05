@@ -1,7 +1,7 @@
 //! Gaussian splat file loading and management
 
 use bevy::prelude::*;
-use bevy_gaussian_splatting::{GaussianCloud, GaussianCloudHandle};
+use bevy_gaussian_splatting::{Gaussian3d, GaussianSceneHandle};
 
 /// Plugin for loading and managing Gaussian splat files
 pub struct SplatLoaderPlugin;
@@ -53,10 +53,10 @@ fn load_splat_on_demand(
         }
 
         // Load the new splat
-        let handle: Handle<GaussianCloud> = asset_server.load(&path.0);
+        let handle: Handle<Gaussian3d> = asset_server.load(&path.0);
         
         commands.spawn((
-            GaussianCloudHandle(handle),
+            GaussianSceneHandle(handle),
             Transform::default(),
             LoadedSplat,
         ));
@@ -69,11 +69,11 @@ fn load_splat_on_demand(
 /// Check if the splat has finished loading
 fn check_splat_loaded(
     asset_server: Res<AssetServer>,
-    splat_query: Query<&GaussianCloudHandle, With<LoadedSplat>>,
+    splat_query: Query<&GaussianSceneHandle, With<LoadedSplat>>,
     mut next_state: ResMut<NextState<SplatLoadState>>,
 ) {
     for handle in splat_query.iter() {
-        match asset_server.get_load_state(&handle.0) {
+        match asset_server.get_load_state(handle.0.id()) {
             Some(bevy::asset::LoadState::Loaded) => {
                 info!("Gaussian splat loaded successfully!");
                 next_state.set(SplatLoadState::Loaded);
